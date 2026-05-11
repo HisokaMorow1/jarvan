@@ -414,6 +414,7 @@ Lo que **podría seguir mejorando** (futuras iteraciones):
 
 ## 13. Créditos
 
+Creado por: Duvan Figueroa Gallardo
 Proyecto prototipo de laboratorio.
 Modelos de IA: Qwen (Alibaba), Whisper (OpenAI), Nomic-embed.
 Inspiración visual y de UX: J.A.R.V.I.S. de Marvel Studios.
