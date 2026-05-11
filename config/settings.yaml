@@ -1,0 +1,93 @@
+app:
+  name: Jarvan
+  language: es
+  log_level: INFO
+  data_dir: data
+  screenshots_dir: data/screenshots
+  logs_dir: logs
+
+# Tuneado para Dell Precision 5820 / Quadro RTX 5000 (16 GB VRAM).
+# Estrategia: tres modelos que coexisten en VRAM SIN swap a RAM.
+#   - planner  (qwen2.5-coder:14b Q4_K_M) ~9 GB — bueno razonando, cabe.
+#   - router   (qwen3:8b      Q4_K_M)     ~5 GB — rápido para chat y clasificación.
+#   - vision   (qwen2.5vl:7b  Q4_K_M)     ~6 GB — para verifier + observe.
+# No los corremos los tres al MISMO instante: Ollama swappea entre ellos
+# manteniendo el último con keep_alive. La RTX 5000 con 16 GB lo soporta cómodo.
+#
+# Si quieres más músculo en planificación, prueba:
+#   planner_model: qwen3:14b    (~9 GB, más generalista)
+#   planner_model: qwen2.5-coder:32b   (NO recomendado, se sale de VRAM)
+
+llm:
+  provider: ollama
+  base_url: http://localhost:11434
+  planner_model: qwen2.5-coder:14b
+  router_model: qwen3:8b
+  vision_model: qwen2.5vl:7b
+  embed_model: nomic-embed-text
+  temperature: 0.2
+  num_ctx: 8192
+  request_timeout: 180
+  keep_alive: "30m"
+
+# Whisper large-v3 en GPU float16 = ~3 GB VRAM, mejor calidad para español.
+# beam_size 5 da precisión sin disparar latencia en una RTX 5000.
+stt:
+  engine: faster-whisper
+  model_size: large-v3
+  device: cuda
+  compute_type: float16
+  language: es
+  vad_filter: true
+  beam_size: 5
+  sample_rate: 16000
+
+# Piper en CPU: el i9-10900X lo corre en tiempo real sin parpadear.
+# Si descargas la voz davefx, suena natural. Fallback pyttsx3 automático.
+tts:
+  engine: piper
+  voice: es_ES-davefx-medium
+  rate: 180
+  fallback: pyttsx3
+
+# PaddleOCR GPU: aprovecha la RTX 5000 para OCR rapidísimo (~50ms por captura).
+vision:
+  primary: vlm
+  ocr_engine: paddleocr
+  ocr_lang: es
+  screenshot_scale: 1.0
+  cache_ttl_seconds: 2
+
+# 20 turnos de contexto inmediato es generoso. Con 64 GB RAM,
+# Chroma puede crecer mucho antes de molestar.
+memory:
+  short_term_window: 20
+  vector_db_path: data/memory/chroma
+  sql_db_path: data/memory/jarvan.db
+  embed_dim: 768
+
+agent:
+  max_steps: 15
+  max_retries_per_step: 3
+  require_confirmation_for:
+    - delete_file
+    - shutdown
+    - run_shell
+  enable_planner: true
+  enable_vision: true
+
+wake_word:
+  enabled: false
+  phrase: "jarvan"
+
+ui:
+  university: "UNIVERSIDAD DE MAGALLANES"
+  subtitle: "Prototipo de Asistente IA Local"
+  splash_ms: 2600
+
+proactive:
+  enabled: true
+  interval_s: 60
+  battery_warn_pct: 20
+  battery_critical_pct: 10
+  ram_warn_pct: 90
